@@ -1,0 +1,42 @@
+import fastf1
+import pandas as pd
+import os
+from sklearn.linear_model import LinearRegression
+
+if not os.path.exists('f1_cache'):
+    os.makedirs('f1_cache')
+
+fastf1.Cache.enable_cache('f1_cache') #this is to make sure I don't get banned for too many API requests :)
+
+def build_historical_dataset(start_year, end_year, location):
+    all_race_data = []
+
+    for year in range(start_year, end_year + 1):
+        try:
+            print(f"Fetching data for {year} {location}...")
+            session = fastf1.get_session(year, location, 'R')
+            session.load(laps=False, telemetry=False, weather=False)
+
+            results = session.results
+            clean_results = results[results['Status'] == 'Finished'].copy()
+
+            year_data = clean_results[['GridPosition', 'ClassifiedPosition']].copy()
+            year_data['Year'] = year
+            all_race_data.append(year_data)
+        except Exception as e:
+            print(f"Could not load {year}: {e}")
+
+    return pd.concat(all_race_data)
+
+
+historical_df = build_historical_dataset(2019, 2024, 'Australia')
+
+
+X = historical_df[['GridPosition']]
+y = historical_df['ClassifiedPosition']
+
+model = LinearRegression()
+model.fit(X, y)
+
+p5_prediction = model.predict([[5]])
+print(f"\nBased on 2019-2024 data, a P5 qualifier is predicted to finish: P{p5_prediction[0]:.2f}")
