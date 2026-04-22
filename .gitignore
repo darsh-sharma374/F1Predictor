@@ -1,0 +1,5 @@
+cache_directory/
+.venv/
+.idea/
+__pycache__/
+*.sqlite
